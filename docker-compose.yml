@@ -1,0 +1,49 @@
+services:
+  appointment:
+    build:
+      context: ./docker/appointment
+      dockerfile: Dockerfile
+    container_name: appointment-service
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=development
+      - PORT=5001
+    volumes:
+      - ./src/appointment_bp:/app
+    networks:
+      - microservices-network
+
+  auth:
+    build:
+      context: ./docker/auth
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "5002:5002"
+    environment:
+      - FLASK_ENV=development
+      - PORT=5002
+    volumes:
+      - ./src/auth_bp:/app
+    networks:
+      - microservices-network
+
+  admin:
+    build:
+      context: ./docker/admin
+      dockerfile: Dockerfile
+    container_name: admin-service
+    ports:
+      - "5003:5003"
+    environment:
+      - FLASK_ENV=development
+      - PORT=5003
+    volumes:
+      - ./src/admin_bp:/app
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
