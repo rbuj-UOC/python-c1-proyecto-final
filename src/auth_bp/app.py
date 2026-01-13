@@ -17,6 +17,21 @@ def hello():
 
 @app.route("/auth/login", methods=["POST"])
 def login():
+    """
+    Endpoint per autenticar un usuari
+
+    Petició JSON:
+    {
+        "username": "string",
+        "password": "string"
+    }
+
+    Resposta JSON:
+    {
+        "token": "bearer_token",
+        "username": "string"
+    }
+    """
     try:
         data = request.get_json()
 
@@ -49,6 +64,45 @@ def login():
             )
         else:
             return jsonify({"error": "Invalid username or password"}), 401
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/auth/verify", methods=["POST"])
+def verify_token():
+    """
+    Endpoint per verificar un token
+
+    Petició JSON:
+    {
+        "token": "bearer_token"
+    }
+
+    Resposta JSON:
+    {
+        "valid": true/false,
+        "username": "string"
+    }
+    """
+    try:
+        data = request.get_json()
+
+        if not data or "token" not in data:
+            return jsonify({"error": "Token is required"}), 400
+
+        token = data["token"]
+
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            return (
+                jsonify({"valid": True, "username": payload["username"]}),
+                200,
+            )
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "Token has expired", "valid": False}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token", "valid": False}), 401
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
