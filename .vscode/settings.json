@@ -2,5 +2,36 @@
     "cSpell.language": "ca,en",
     "cSpell.words": [
         "dotenv"
-    ]
+    ],
+    "editor.formatOnSave": true,
+    "[json]": {
+        "editor.formatOnSave": true
+    },
+    "[markdown]": {
+        "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+        "editor.formatOnSave": true
+    },
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true,
+        "diffEditor.ignoreTrimWhitespace": false,
+        "editor.defaultColorDecorators": "never",
+        "editor.wordBasedSuggestions": "off",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+            "source.fixAll": "explicit"
+        }
+    },
+    "[shellscript]": {
+        "editor.formatOnSave": true,
+    },
+    "editor.codeActionsOnSave": {
+        "source.fixAll.markdownlint": "always",
+        "source.fixAll.shellcheck": "explicit"
+    },
+    "editor.rulers": [
+        80
+    ],
+    "files.trimTrailingWhitespace": true
 }
