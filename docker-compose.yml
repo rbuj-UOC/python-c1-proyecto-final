@@ -24,6 +24,9 @@ services:
     environment:
       - FLASK_ENV=development
       - PORT=5002
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - DEFAULT_ADMIN_USER=admin
+      - DEFAULT_ADMIN_PASSWORD=admin123
     volumes:
       - ./src/auth_bp:/app
     networks:
