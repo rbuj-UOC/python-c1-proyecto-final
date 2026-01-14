@@ -20,7 +20,9 @@ def verify_token():
     Resposta JSON:
     {
         "valid": true/false,
-        "username": "string"
+        "username": "string",
+        "rol": "string",
+        "id_user": int
     }
     """
     try:
@@ -34,7 +36,14 @@ def verify_token():
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             return (
-                jsonify({"valid": True, "username": payload["username"]}),
+                jsonify(
+                    {
+                        "valid": True,
+                        "username": payload["username"],
+                        "rol": payload.get("rol"),
+                        "id_user": payload.get("id_user"),
+                    }
+                ),
                 200,
             )
         except jwt.ExpiredSignatureError:

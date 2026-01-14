@@ -27,8 +27,11 @@ services:
       - SECRET_KEY=dev-secret-key-change-in-production
       - DEFAULT_ADMIN_USER=admin
       - DEFAULT_ADMIN_PASSWORD=admin123
+      - DEFAULT_ADMIN_ROLE=admin
+      - DATABASE_PATH=/app/data/auth.db
     volumes:
       - ./src/auth_bp:/app
+      - auth-db-data:/app/data
     networks:
       - microservices-network
 
@@ -50,3 +53,7 @@ services:
 networks:
   microservices-network:
     driver: bridge
+
+volumes:
+  auth-db-data:
+    driver: local

@@ -2,6 +2,9 @@ import os
 import jwt
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify
+from werkzeug.security import check_password_hash
+from database import get_db
+from models import User
 
 login_bp = Blueprint("login", __name__)
 
@@ -22,7 +25,8 @@ def login():
     Resposta JSON:
     {
         "token": "bearer_token",
-        "username": "string"
+        "username": "string",
+        "rol": "string"
     }
     """
     try:
@@ -34,13 +38,16 @@ def login():
         username = data["username"]
         password = data["password"]
 
-        # Verificar credencials
-        if username == os.getenv(
-            "DEFAULT_ADMIN_USER", "admin"
-        ) and password == os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123"):
-            # Generar token JWT
+        # Consultar l'usuari a la base de dades
+        db = get_db()
+        user = db.query(User).filter(User.username == username).first()
+
+        if user and check_password_hash(user.password, password):
+            # Generar token JWT amb informació de l'usuari
             payload = {
-                "username": username,
+                "id_user": user.id_user,
+                "username": user.username,
+                "rol": user.rol.value,
                 "exp": datetime.utcnow() + timedelta(hours=24),
             }
             token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
@@ -49,7 +56,8 @@ def login():
                 jsonify(
                     {
                         "token": token,
-                        "username": username,
+                        "username": user.username,
+                        "rol": user.rol.value,
                         "message": "Login successful",
                     }
                 ),
