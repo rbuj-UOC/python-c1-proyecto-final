@@ -1,4 +1,5 @@
 services:
+
   appointment:
     build:
       context: ./docker/appointment
@@ -14,11 +15,11 @@ services:
     networks:
       - microservices-network
 
-  auth:
+  admin:
     build:
-      context: ./docker/auth
+      context: ./docker/admin
       dockerfile: Dockerfile
-    container_name: auth-service
+    container_name: admin-service
     ports:
       - "5002:5002"
     environment:
@@ -28,25 +29,10 @@ services:
       - DEFAULT_ADMIN_USER=admin
       - DEFAULT_ADMIN_PASSWORD=admin123
       - DEFAULT_ADMIN_ROLE=admin
-      - DATABASE_PATH=/app/data/auth.db
-    volumes:
-      - ./src/auth:/app
-      - auth-db-data:/app/data
-    networks:
-      - microservices-network
-
-  admin:
-    build:
-      context: ./docker/admin
-      dockerfile: Dockerfile
-    container_name: admin-service
-    ports:
-      - "5003:5003"
-    environment:
-      - FLASK_ENV=development
-      - PORT=5003
+      - DATABASE_PATH=/app/data/admin.db
     volumes:
       - ./src/admin:/app
+      - admin-db-data:/app/data
     networks:
       - microservices-network
 
@@ -55,5 +41,5 @@ networks:
     driver: bridge
 
 volumes:
-  auth-db-data:
+  admin-db-data:
     driver: local
