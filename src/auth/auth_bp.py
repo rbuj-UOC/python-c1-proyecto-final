@@ -10,7 +10,7 @@ from werkzeug.security import check_password_hash
 from database import get_db
 from models import User
 
-# Crear blueprint principal d'autenticació
+# Crear el blueprint principal d'autenticació
 auth_bp = Blueprint("auth", __name__)
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
@@ -29,9 +29,9 @@ def login():
 
     Resposta JSON:
     {
-        "token": "bearer_token",
+        "access_token": "bearer_token",
         "username": "string",
-        "rol": "string"
+        "role": "string"
     }
     """
     try:
@@ -52,7 +52,7 @@ def login():
             payload = {
                 "id_user": user.id_user,
                 "username": user.username,
-                "rol": user.rol.value,
+                "role": user.role.value,
                 "exp": datetime.utcnow() + timedelta(hours=24),
             }
             token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
@@ -60,9 +60,9 @@ def login():
             return (
                 jsonify(
                     {
-                        "token": token,
+                        "access_token": token,
                         "username": user.username,
-                        "rol": user.rol.value,
+                        "role": user.role.value,
                         "message": "Login successful",
                     }
                 ),
@@ -71,9 +71,9 @@ def login():
         else:
             return jsonify({"error": "Invalid username or password"}), 401
 
-    except ValueError as e:  # pylint: disable=broad-except
+    except ValueError as e:
         return jsonify({"error": f"Validation error: {str(e)}"}), 400
-    except Exception:  # pylint: disable=broad-except,unused-variable
+    except Exception:  # pylint: disable=broad-except
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -84,24 +84,24 @@ def verify_token():
 
     Petició JSON:
     {
-        "token": "bearer_token"
+        "access_token": "bearer_token"
     }
 
     Resposta JSON:
     {
         "valid": true/false,
         "username": "string",
-        "rol": "string",
+        "role": "string",
         "id_user": int
     }
     """
     try:
         data = request.get_json()
 
-        if not data or "token" not in data:
-            return jsonify({"error": "Token is required"}), 400
+        if not data or "access_token" not in data:
+            return jsonify({"error": "Access token is required"}), 400
 
-        token = data["token"]
+        token = data["access_token"]
 
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
@@ -110,7 +110,7 @@ def verify_token():
                     {
                         "valid": True,
                         "username": payload["username"],
-                        "rol": payload.get("rol"),
+                        "role": payload.get("role"),
                         "id_user": payload.get("id_user"),
                     }
                 ),
@@ -121,7 +121,7 @@ def verify_token():
         except jwt.InvalidTokenError:
             return jsonify({"error": "Invalid token", "valid": False}), 401
 
-    except ValueError as e:  # pylint: disable=broad-except
+    except ValueError as e:
         return jsonify({"error": f"Validation error: {str(e)}", "valid": False}), 400
-    except Exception:  # pylint: disable=broad-except,unused-variable
+    except Exception:  # pylint: disable=broad-except
         return jsonify({"error": "Internal server error", "valid": False}), 500

@@ -5,7 +5,7 @@ import enum
 Base = declarative_base()
 
 
-class RolEnum(enum.Enum):
+class RoleEnum(enum.Enum):
     admin = "admin"
     metge = "metge"
     secretaria = "secretaria"
@@ -18,7 +18,7 @@ class User(Base):
     id_user = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(100), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
-    rol = Column(Enum(RolEnum), nullable=False)
+    role = Column(Enum(RoleEnum), nullable=False)
 
     def __repr__(self):
-        return f"<User(id_user={self.id_user}, username='{self.username}', rol='{self.rol.value}')>"
+        return f"<User(id_user={self.id_user}, username='{self.username}', role='{self.role.value}')>"

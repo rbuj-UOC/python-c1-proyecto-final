@@ -2,7 +2,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from werkzeug.security import generate_password_hash
-from models import Base, User, RolEnum
+from models import Base, User, RoleEnum
 
 # Configuració de la base de dades
 DATABASE_PATH = os.getenv("DATABASE_PATH", "/app/data/auth.db")
@@ -41,37 +41,39 @@ def create_default_admin():
 
             # Validar que el rol sigui vàlid
             try:
-                role_enum = RolEnum[admin_role]
+                role_enum = RoleEnum[admin_role]
             except KeyError:
-                print(f"Rol '{admin_role}' no vàlid. Utilitzant 'admin' per defecte.")
-                role_enum = RolEnum.admin
+                print(
+                    f"El rol '{admin_role}' no és vàlid. S'utilitza el valor per defecte 'admin'."
+                )
+                role_enum = RoleEnum.admin
 
             # Crear l'usuari administrador
             admin_user = User(
                 username=admin_username,
                 password=generate_password_hash(admin_password),
-                rol=role_enum,
+                role=role_enum,
             )
 
             db.add(admin_user)
             db.commit()
             print(
-                f"Usuari administrador '{admin_username}' creat correctament amb rol '{role_enum.value}'."
+                f"S'ha creat correctament l'usuari administrador '{admin_username}' amb el rol '{role_enum.value}'."
             )
         else:
             print(
-                f"La base de dades ja conté {user_count} usuari(s). No es crea l'usuari per defecte."
+                f"La base de dades ja conté {user_count} usuari(s). No es crea l'usuari administrador per defecte."
             )
 
     except Exception as e:
         db.rollback()
-        print(f"Error creant l'usuari administrador per defecte: {e}")
+        print(f"Error en crear l'usuari administrador per defecte: {e}")
     finally:
         db.close()
 
 
 def get_db():
-    """Retorna una sessió de base de dades"""
+    """Retorna una sessió a la base de dades"""
     db = SessionLocal()
     try:
         return db
