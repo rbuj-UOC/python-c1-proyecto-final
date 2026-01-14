@@ -73,7 +73,7 @@ def login():
 
     except ValueError as e:
         return jsonify({"error": f"Validation error: {str(e)}"}), 400
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -123,5 +123,5 @@ def verify_token():
 
     except ValueError as e:
         return jsonify({"error": f"Validation error: {str(e)}", "valid": False}), 400
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         return jsonify({"error": "Internal server error", "valid": False}), 500

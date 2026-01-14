@@ -65,9 +65,9 @@ def require_auth_role(*allowed_roles):
                 return jsonify({"error": "Token ha "}), 401
             except jwt.InvalidTokenError:
                 return jsonify({"error": "Invalid token"}), 401
-            except KeyError as e:  # pylint: disable=broad-except
+            except KeyError as e:
                 return jsonify({"error": f"Invalid token payload: {str(e)}"}), 401
-            except Exception:  # pylint: disable=broad-except
+            except Exception:
                 return jsonify({"error": "Authentication failed"}), 401
 
         return decorated_function

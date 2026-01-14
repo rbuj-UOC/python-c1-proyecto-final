@@ -90,9 +90,9 @@ def get_user(user_id):
             200,
         )
 
-    except ValueError as e:  # pylint: disable=broad-except
+    except ValueError as e:
         return jsonify({"error": f"Error de validació: {str(e)}"}), 400
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         return jsonify({"error": "Error intern del servidor"}), 500
 
 
@@ -153,7 +153,15 @@ def create_user():
                 400,
             )
 
-        # Verificar que l'usuari no existeixi
+        # Verifica que una secretaria no pugui crear usuaris admin
+        current_user_role = request.user.get("role")
+        if current_user_role == "secretaria" and role_enum == RoleEnum.admin:
+            return (
+                jsonify({"error": "Secretaria no pot crear usuaris amb rol admin"}),
+                403,
+            )
+
+        # Verifica que l'usuari no existeixi
         db = get_db()
         existing_user = db.query(User).filter(User.username == username).first()
 
@@ -185,9 +193,9 @@ def create_user():
             201,
         )
 
-    except ValueError as e:  # pylint: disable=broad-except
+    except ValueError as e:
         return jsonify({"error": f"Validation error: {str(e)}"}), 400
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -224,6 +232,18 @@ def update_user(user_id):
         if not user:
             return jsonify({"error": "Usuari no trobat"}), 404
 
+        # Verifica que una secretaria no pugui modificar usuaris admin
+        current_user_role = request.user.get("role")
+        if current_user_role == "secretaria" and user.role == RoleEnum.admin:
+            return (
+                jsonify(
+                    {
+                        "error": "Una secretaria no pot modificar els usuaris amb rol admin"
+                    }
+                ),
+                403,
+            )
+
         data = request.get_json()
 
         if not data:
@@ -233,7 +253,7 @@ def update_user(user_id):
         if "username" in data:
             username = data["username"]
 
-            # Verificar que el nou username no existeixi
+            # Verifica que el nou username no existeixi
             existing_user = (
                 db.query(User)
                 .filter(User.username == username, User.id_user != user_id)
@@ -258,6 +278,16 @@ def update_user(user_id):
 
             try:
                 role_enum = RoleEnum[role]
+
+                # Verifica que una secretaria no pugui assignar rol admin
+                if current_user_role == "secretaria" and role_enum == RoleEnum.admin:
+                    return (
+                        jsonify(
+                            {"error": "Una secretaria no pot assignar el rol admin"}
+                        ),
+                        403,
+                    )
+
                 user.role = role_enum
             except KeyError:
                 return (
@@ -283,9 +313,9 @@ def update_user(user_id):
             200,
         )
 
-    except ValueError as e:  # pylint: disable=broad-except
+    except ValueError as e:
         return jsonify({"error": f"Error de validació: {str(e)}"}), 400
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         return jsonify({"error": "Error intern del servidor"}), 500
 
 
@@ -312,12 +342,22 @@ def delete_user(user_id):
         if not user:
             return jsonify({"error": "Usuari no trobat"}), 404
 
+        # Verifica que una secretaria no pugui eliminar usuaris admin
+        current_user_role = request.user.get("role")
+        if current_user_role == "secretaria" and user.role == RoleEnum.admin:
+            return (
+                jsonify(
+                    {"error": "Una secretaria no pot eliminar usuaris amb rol admin"}
+                ),
+                403,
+            )
+
         db.delete(user)
         db.commit()
 
         return jsonify({"message": "S'ha eliminat l'usuari correctament"}), 200
 
-    except ValueError as e:  # pylint: disable=broad-except
+    except ValueError as e:
         return jsonify({"error": f"Error de validació: {str(e)}"}), 400
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         return jsonify({"error": "Error intern del servidor"}), 500
