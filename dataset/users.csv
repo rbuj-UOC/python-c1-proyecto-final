@@ -1,0 +1,17 @@
+username,password,role
+j.garcia,p@ssw0rd,admin
+s.gomez,gomez999,admin
+f.molina,molina666,admin
+j.navarro,navarro000,admin
+m.valls,12345678,metge
+l.martinez,marti2022,metge
+d.ferrer,ferrer888,metge
+h.rubio,rubio222,metge
+c.dominguez,carles1970,secretaria
+r.ramos,ramos333,secretaria
+e.sanchez,sanchez777,secretaria
+i.vila,vila111,secretaria
+t.puig,tresa1957,pacient
+a.soler,soler2021,pacient
+b.lopez,lopez555,pacient
+g.torres,torres444,pacient
