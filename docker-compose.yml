@@ -10,7 +10,7 @@ services:
       - FLASK_ENV=development
       - PORT=5001
     volumes:
-      - ./src/appointment_bp:/app
+      - ./src/appointment:/app
     networks:
       - microservices-network
 
@@ -30,7 +30,7 @@ services:
       - DEFAULT_ADMIN_ROLE=admin
       - DATABASE_PATH=/app/data/auth.db
     volumes:
-      - ./src/auth_bp:/app
+      - ./src/auth:/app
       - auth-db-data:/app/data
     networks:
       - microservices-network
@@ -46,7 +46,7 @@ services:
       - FLASK_ENV=development
       - PORT=5003
     volumes:
-      - ./src/admin_bp:/app
+      - ./src/admin:/app
     networks:
       - microservices-network
 

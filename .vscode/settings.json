@@ -20,7 +20,8 @@
         "editor.wordBasedSuggestions": "off",
         "editor.codeActionsOnSave": {
             "source.organizeImports": "explicit",
-            "source.fixAll": "explicit"
+            "source.fixAll": "explicit",
+            "source.fixAll.pylance": "explicit"
         }
     },
     "[shellscript]": {
@@ -28,8 +29,10 @@
     },
     "editor.codeActionsOnSave": {
         "source.fixAll.markdownlint": "always",
-        "source.fixAll.shellcheck": "explicit"
+        "source.fixAll.shellcheck": "explicit",
+        "source.fixAll.pylance": "explicit"
     },
+    "python.analysis.typeCheckingMode": "basic",
     "editor.rulers": [
         80
     ],
