@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script per carregar els usuaris inicials des del fitxer CSV a la base de dades
-utilitzant l'endpoint /admin/usuari del servei auth.
+Script per carregar dades (usuaris, pacients, doctors, centres) amb els conjunts
+de dades la carpeta dataset utilitzant els endpoints del servei admin.
 """
 
 from os import path
@@ -14,8 +14,18 @@ import time
 # Configuració
 AUTH_SERVICE_URL = "http://localhost:5002"
 ADMIN_LOGIN_ENDPOINT = f"{AUTH_SERVICE_URL}/auth/login"
+
+# Endpoints admin
 CREATE_USER_ENDPOINT = f"{AUTH_SERVICE_URL}/admin/usuari"
+CREATE_PATIENT_ENDPOINT = f"{AUTH_SERVICE_URL}/admin/pacients"
+CREATE_DOCTOR_ENDPOINT = f"{AUTH_SERVICE_URL}/admin/doctors"
+CREATE_CENTER_ENDPOINT = f"{AUTH_SERVICE_URL}/admin/centres"
+
+# Fitxers CSV
 CSV_USERS_FILE_NAME = "users.csv"
+CSV_PATIENTS_FILE_NAME = "patients.csv"
+CSV_DOCTORS_FILE_NAME = "doctors.csv"
+CSV_CENTERS_FILE_NAME = "centers.csv"
 
 # Credencials de l'administrador per defecte (per obtenir el token)
 DEFAULT_ADMIN_USERNAME = "admin"
@@ -51,7 +61,10 @@ def get_admin_token():
 
 
 def create_user(token, username, password, role):
-    """Crea un usuari mitjançant l'endpoint /admin/usuari."""
+    """Crea un usuari mitjançant l'endpoint /admin/usuari.
+
+    Retorna: "created" | "exists" | "error".
+    """
 
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     payload = {"username": username, "password": password, "role": role}
@@ -60,19 +73,19 @@ def create_user(token, username, password, role):
             CREATE_USER_ENDPOINT, json=payload, headers=headers, timeout=5
         )
         if response.status_code == 201:
-            return True
+            return "created"
         elif response.status_code == 409:
             print(f"Ja existeix l'usuari '{username}', s'ha omès.")
-            return False
+            return "exists"
         else:
             print(
                 f"Error en crear l'usuari '{username}': {response.status_code} - {response.text}"
             )
-            return False
+            return "error"
 
     except requests.exceptions.RequestException as e:
         print(f"Error de connexió en crear l'usuari '{username}': {e}")
-        return False
+        return "error"
 
 
 def load_users_from_csv(csv_path, token):
@@ -101,14 +114,17 @@ def load_users_from_csv(csv_path, token):
                     skipped += 1
                     continue
 
-                if create_user(token, username, password, role):
+                status = create_user(token, username, password, role)
+
+                if status == "created":
                     created += 1
-                    # Petit delay per no sobrecarregar el servidor
-                    time.sleep(0.1)
-                elif "ja existeix" in str(username):
+                    time.sleep(0.05)
+                elif status == "exists":
                     skipped += 1
                 else:
                     errors += 1
+                    print("S'atura la càrrega d'usuaris en trobar el primer error.")
+                    return False
 
             # Resum
             print("\n" + "-" * 50)
@@ -119,6 +135,7 @@ def load_users_from_csv(csv_path, token):
             print(f" Nombre d'usuaris saltats: {skipped}")
             print(f" Nombre d'errors: {errors}")
             print("-" * 50)
+            print("")
 
             return created > 0 or skipped > 0
 
@@ -127,6 +144,321 @@ def load_users_from_csv(csv_path, token):
         return False
     except Exception as e:
         print(f"Error en llegir el fitxer CSV: {e}")
+        return False
+
+
+def create_patient(token, id_user, username, password, name, phone, status):
+    """Crea un pacient via endpoint /admin/patients.
+
+    Retorna: "created" | "exists" | "error".
+    """
+
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+    payload = {}
+    if id_user:
+        payload = {
+            "id_user": id_user,
+            "name": name,
+            "phone": phone,
+            "status": status,
+        }
+    elif username and password:
+        payload = {
+            "username": username,
+            "password": password,
+            "name": name,
+            "phone": phone,
+            "status": status,
+        }
+    else:
+        payload = {
+            "name": name,
+            "phone": phone,
+            "status": status,
+        }
+
+    try:
+        response = requests.post(
+            CREATE_PATIENT_ENDPOINT, json=payload, headers=headers, timeout=5
+        )
+        if response.status_code == 201:
+            return "created"
+        elif response.status_code == 409:
+            print(f"Ja existeix el pacient '{name}', s'ha omès.")
+            return "exists"
+        else:
+            print(
+                f"Error en crear el pacient '{name}': {response.status_code} - {response.text}"
+            )
+            return "error"
+    except requests.exceptions.RequestException as e:
+        print(f"Error de connexió en crear el pacient '{name}': {e}")
+        return "error"
+
+
+def load_patients_from_csv(csv_path, token):
+    """Carrega pacients des del CSV."""
+
+    try:
+        with open(csv_path, "r", encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+
+            total = created = skipped = errors = 0
+
+            for row in reader:
+                id_user_raw = row.get("id_user", "").strip()
+                # id_user és opcional: si és buit o no numèric, es tracta com a None
+                id_user = None
+                if id_user_raw:
+                    try:
+                        id_user = int(id_user_raw)
+                    except ValueError:
+                        print(
+                            f"Advertència: id_user no és un enter vàlid ({id_user_raw}), s'ignora"
+                        )
+                        id_user = None
+                username = row.get("username", "").strip()
+                password = row.get("password", "").strip()
+                name = row.get("name", "").strip()
+                phone = row.get("phone", "").strip()
+                status = row.get("status", "").strip()
+
+                total += 1
+                print(f"[{total}] Es crea el pacient: {name} (id_user: {id_user})")
+
+                if not name or not status:
+                    print("Error: manca de dades obligatòries (name/status)")
+                    errors += 1
+                    return False
+
+                status_create = create_patient(
+                    token, id_user, username, password, name, phone or None, status
+                )
+
+                if status_create == "created":
+                    created += 1
+                    time.sleep(0.05)
+                elif status_create == "exists":
+                    skipped += 1
+                else:
+                    errors += 1
+                    print("S'atura la càrrega de pacients en trobar el primer error.")
+                    return False
+
+            print("\n" + "-" * 50)
+            print(" RESUM DE PACIENTS")
+            print("-" * 50)
+            print(f" Total: {total}")
+            print(f" Creats: {created}")
+            print(f" Omesos: {skipped}")
+            print(f" Errors: {errors}")
+            print("-" * 50)
+            print("")
+
+            return created > 0 or skipped > 0
+
+    except FileNotFoundError:
+        print(f"Error: No s'ha trobat el fitxer '{csv_path}'")
+        return False
+    except Exception as e:
+        print(f"Error en llegir el fitxer CSV de pacients: {e}")
+        return False
+
+
+def create_doctor(token, id_user, username, password, name, specialty):
+    """Crea un doctor via endpoint /admin/doctors.
+
+    Retorna: "created" | "exists" | "error".
+    """
+
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+    payload = {}
+    if id_user is not None:
+        payload = {
+            "id_user": id_user,
+            "name": name,
+            "specialty": specialty,
+        }
+    elif username and password:
+        payload = {
+            "username": username,
+            "password": password,
+            "name": name,
+            "specialty": specialty,
+        }
+    else:
+        payload = {
+            "name": name,
+            "specialty": specialty,
+        }
+
+    try:
+        response = requests.post(
+            CREATE_DOCTOR_ENDPOINT, json=payload, headers=headers, timeout=5
+        )
+        if response.status_code == 201:
+            return "created"
+        elif response.status_code == 409:
+            print(f"Ja existeix el doctor '{name}', s'ha omès.")
+            return "exists"
+        else:
+            print(
+                f"Error en crear el doctor '{name}': {response.status_code} - {response.text}"
+            )
+            return "error"
+    except requests.exceptions.RequestException as e:
+        print(f"Error de connexió en crear el doctor '{name}': {e}")
+        return "error"
+
+
+def load_doctors_from_csv(csv_path, token):
+    """Carrega doctors des del CSV."""
+
+    try:
+        with open(csv_path, "r", encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+
+            total = created = skipped = errors = 0
+
+            for row in reader:
+                id_user_raw = row.get("id_user", "").strip()
+                # id_user és opcional: si és buit o no numèric, es tracta com a None
+                id_user = None
+                if id_user_raw:
+                    try:
+                        id_user = int(id_user_raw)
+                    except ValueError:
+                        print(
+                            f"Advertència: id_user no és un enter vàlid ({id_user_raw}), s'ignora"
+                        )
+                        id_user = None
+                username = row.get("username", "").strip()
+                password = row.get("password", "").strip()
+                name = row.get("name", "").strip()
+                specialty = row.get("specialty", "").strip()
+
+                total += 1
+                print(f"[{total}] Es crea el doctor: {name} (id_user: {id_user})")
+
+                if not name or not specialty:
+                    print("Error: manca de dades obligatòries (name/specialty)")
+                    errors += 1
+                    return False
+
+                status_create = create_doctor(
+                    token, id_user or None, username, password, name, specialty
+                )
+
+                if status_create == "created":
+                    created += 1
+                    time.sleep(0.05)
+                elif status_create == "exists":
+                    skipped += 1
+                else:
+                    errors += 1
+                    print("S'atura la càrrega de doctors en trobar el primer error.")
+                    return False
+
+            print("\n" + "-" * 50)
+            print(" RESUM DE DOCTORS")
+            print("-" * 50)
+            print(f" Total: {total}")
+            print(f" Creats: {created}")
+            print(f" Omesos: {skipped}")
+            print(f" Errors: {errors}")
+            print("-" * 50)
+            print("")
+
+            return created > 0 or skipped > 0
+
+    except FileNotFoundError:
+        print(f"Error: No s'ha trobat el fitxer '{csv_path}'")
+        return False
+    except Exception as e:
+        print(f"Error en llegir el fitxer CSV de doctors: {e}")
+        return False
+
+
+def create_center(token, name, address):
+    """Crea un centre via endpoint /admin/centers.
+
+    Retorna: "created" | "exists" | "error".
+    """
+
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    payload = {"name": name, "address": address}
+
+    try:
+        response = requests.post(
+            CREATE_CENTER_ENDPOINT, json=payload, headers=headers, timeout=5
+        )
+        if response.status_code == 201:
+            return "created"
+        elif response.status_code == 409:
+            print(f"Ja existeix el centre '{name}', s'ha omès.")
+            return "exists"
+        else:
+            print(
+                f"Error en crear el centre '{name}': {response.status_code} - {response.text}"
+            )
+            return "error"
+    except requests.exceptions.RequestException as e:
+        print(f"Error de connexió en crear el centre '{name}': {e}")
+        return "error"
+
+
+def load_centers_from_csv(csv_path, token):
+    """Carrega centres des del CSV."""
+
+    try:
+        with open(csv_path, "r", encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+
+            total = created = skipped = errors = 0
+
+            for row in reader:
+                name = row.get("name", "").strip()
+                address = row.get("address", "").strip()
+
+                total += 1
+                print(f"[{total}] Es crea el centre: {name}")
+
+                if not name or not address:
+                    print("Error: manca de dades obligatòries (name/address)")
+                    errors += 1
+                    return False
+
+                status_create = create_center(token, name, address)
+
+                if status_create == "created":
+                    created += 1
+                    time.sleep(0.05)
+                elif status_create == "exists":
+                    skipped += 1
+                else:
+                    errors += 1
+                    print("S'atura la càrrega de centres en trobar el primer error.")
+                    return False
+
+            print("\n" + "-" * 50)
+            print(" RESUM DE CENTRES")
+            print("-" * 50)
+            print(f" Total: {total}")
+            print(f" Creats: {created}")
+            print(f" Omesos: {skipped}")
+            print(f" Errors: {errors}")
+            print("-" * 50)
+            print("")
+
+            return created > 0 or skipped > 0
+
+    except FileNotFoundError:
+        print(f"Error: No s'ha trobat el fitxer '{csv_path}'")
+        return False
+    except Exception as e:
+        print(f"Error en llegir el fitxer CSV de centres: {e}")
         return False
 
 
@@ -146,14 +478,32 @@ def main():
         )
         sys.exit(1)
 
-    # Carrega els usuaris del fitxer CSV
-    csv_file_path = path.join(dataset_folder, CSV_USERS_FILE_NAME)
-    success = load_users_from_csv(csv_file_path, token)
-    if success:
-        print("\nS'ha completat la càrrega d'usuaris.")
-        sys.exit(0)
-    else:
-        print("\nLa càrrega d'usuaris ha fallat.")
+    # Carrega usuaris
+    csv_users = path.join(dataset_folder, CSV_USERS_FILE_NAME)
+    users_ok = load_users_from_csv(csv_users, token)
+    if users_ok == False:
+        print("La càrrega de dades ha finalitzat amb errors o omissions.")
+        sys.exit(1)
+
+    # Carrega pacients
+    csv_patients = path.join(dataset_folder, CSV_PATIENTS_FILE_NAME)
+    patients_ok = load_patients_from_csv(csv_patients, token)
+    if patients_ok == False:
+        print("La càrrega de dades ha finalitzat amb errors o omissions.")
+        sys.exit(1)
+
+    # Carrega doctors
+    csv_doctors = path.join(dataset_folder, CSV_DOCTORS_FILE_NAME)
+    doctors_ok = load_doctors_from_csv(csv_doctors, token)
+    if doctors_ok == False:
+        print("La càrrega de dades ha finalitzat amb errors o omissions.")
+        sys.exit(1)
+
+    # Carrega centres
+    csv_centers = path.join(dataset_folder, CSV_CENTERS_FILE_NAME)
+    centers_ok = load_centers_from_csv(csv_centers, token)
+    if centers_ok == False:
+        print("La càrrega de dades ha finalitzat amb errors o omissions.")
         sys.exit(1)
 
 

@@ -1,0 +1,5 @@
+id_user,username,password,name,phone,status
+,t.puig,tresa1957,Tomàs Puig,+34600111111,ACTIU
+,a.soler,soler2021,Anna Soler,+34600222222,ACTIU
+,b.lopez,lopez555,Belen Lopez,+34600333333,INACTIU
+,g.torres,torres444,Guillem Torres,+34600444444,ACTIU
