@@ -63,28 +63,31 @@ def login():
                         "access_token": token,
                         "username": user.username,
                         "role": user.role.value,
-                        "message": "Login successful",
+                        "message": "Autenticació correcta",
                     }
                 ),
                 200,
             )
         else:
-            return jsonify({"error": "Invalid username or password"}), 401
+            return (
+                jsonify({"error": "El nom d'usuari o la contrasenya no són vàlids"}),
+                401,
+            )
 
     except ValueError as e:
-        return jsonify({"error": f"Validation error: {str(e)}"}), 400
+        return jsonify({"error": f"Error de validació: {str(e)}"}), 400
     except Exception:
-        return jsonify({"error": "Internal server error"}), 500
+        return jsonify({"error": "Error intern del servidor"}), 500
 
 
-@auth_bp.route("/verify", methods=["POST"])
+@auth_bp.route("/", methods=["GET"])
 def verify_token():
     """
     Endpoint per verificar un token
 
-    Petició JSON:
+    Capçaleres:
     {
-        "access_token": "bearer_token"
+        "Authorization": "Bearer <access_token>"
     }
 
     Resposta JSON:
@@ -96,12 +99,28 @@ def verify_token():
     }
     """
     try:
-        data = request.get_json()
+        auth_header = request.headers.get("Authorization")
 
-        if not data or "access_token" not in data:
-            return jsonify({"error": "Access token is required"}), 400
+        if not auth_header:
+            return (
+                jsonify({"error": "Falta la capçalera Authorization", "valid": False}),
+                401,
+            )
 
-        token = data["access_token"]
+        # Extreure el token (format: "Bearer <token>")
+        parts = auth_header.split()
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            return (
+                jsonify(
+                    {
+                        "error": "El format de la capçalera Authorization no és vàlid",
+                        "valid": False,
+                    }
+                ),
+                401,
+            )
+
+        token = parts[1]
 
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
@@ -117,11 +136,11 @@ def verify_token():
                 200,
             )
         except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token has expired", "valid": False}), 401
+            return jsonify({"error": "El token ha expirat", "valid": False}), 401
         except jwt.InvalidTokenError:
-            return jsonify({"error": "Invalid token", "valid": False}), 401
+            return jsonify({"error": "El token no és vàlid", "valid": False}), 401
 
     except ValueError as e:
-        return jsonify({"error": f"Validation error: {str(e)}", "valid": False}), 400
+        return jsonify({"error": f"Error de validació: {str(e)}", "valid": False}), 400
     except Exception:
-        return jsonify({"error": "Internal server error", "valid": False}), 500
+        return jsonify({"error": "Error intern del servidor", "valid": False}), 500
