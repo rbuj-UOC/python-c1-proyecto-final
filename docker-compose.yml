@@ -10,8 +10,13 @@ services:
     environment:
       - FLASK_ENV=development
       - PORT=5001
+      - ADMIN_PORT=5002
+      - ADMIN_HOST=admin-service
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - DATABASE_PATH=/app/data/appointments.db
     volumes:
       - ./src/appointment:/app
+      - appointment-db-data:/app/data
     networks:
       - microservices-network
 
@@ -42,4 +47,6 @@ networks:
 
 volumes:
   admin-db-data:
+    driver: local
+  appointment-db-data:
     driver: local

@@ -14,6 +14,7 @@ import time
 # Configuració
 AUTH_SERVICE_URL = "http://localhost:5002"
 ADMIN_LOGIN_ENDPOINT = f"{AUTH_SERVICE_URL}/auth/login"
+APPOINTMENT_SERVICE_URL = "http://localhost:5001"
 
 # Endpoints admin
 CREATE_USER_ENDPOINT = f"{AUTH_SERVICE_URL}/admin/usuari"
@@ -21,11 +22,15 @@ CREATE_PATIENT_ENDPOINT = f"{AUTH_SERVICE_URL}/admin/pacients"
 CREATE_DOCTOR_ENDPOINT = f"{AUTH_SERVICE_URL}/admin/doctors"
 CREATE_CENTER_ENDPOINT = f"{AUTH_SERVICE_URL}/admin/centres"
 
+# Endpoints appointment
+CREATE_APPOINTMENT_ENDPOINT = f"{APPOINTMENT_SERVICE_URL}/cites/"
+
 # Fitxers CSV
 CSV_USERS_FILE_NAME = "users.csv"
 CSV_PATIENTS_FILE_NAME = "patients.csv"
 CSV_DOCTORS_FILE_NAME = "doctors.csv"
 CSV_CENTERS_FILE_NAME = "centers.csv"
+CSV_APPOINTMENTS_FILE_NAME = "appointment.csv"
 
 # Credencials de l'administrador per defecte (per obtenir el token)
 DEFAULT_ADMIN_USERNAME = "admin"
@@ -462,6 +467,119 @@ def load_centers_from_csv(csv_path, token):
         return False
 
 
+def create_appointment(token, date, reason, id_patient, id_doctor, id_center):
+    """Crea una cita via endpoint /cites/.
+
+    Retorna: "created" | "exists" | "error".
+    """
+
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    payload = {
+        "date": date,
+        "reason": reason,
+        "id_patient": id_patient,
+        "id_doctor": id_doctor,
+        "id_center": id_center,
+    }
+
+    try:
+        response = requests.post(
+            CREATE_APPOINTMENT_ENDPOINT, json=payload, headers=headers, timeout=5
+        )
+        if response.status_code == 201:
+            return "created"
+        elif response.status_code == 409:
+            print(
+                f"Ja existeix la cita per al pacient {id_patient} a la data {date}, s'ha omès."
+            )
+            return "exists"
+        else:
+            print(f"Error en crear la cita: {response.status_code} - {response.text}")
+            return "error"
+    except requests.exceptions.RequestException as e:
+        print(f"Error de connexió en crear la cita: {e}")
+        return "error"
+
+
+def load_appointments_from_csv(csv_path, token):
+    """Carrega cites des del CSV."""
+
+    try:
+        with open(csv_path, "r", encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+
+            total = created = skipped = errors = 0
+
+            for row in reader:
+                date = row.get("date", "").strip()
+                reason = row.get("reason", "").strip()
+                id_patient_raw = row.get("id_patient", "").strip()
+                id_doctor_raw = row.get("id_doctor", "").strip()
+                id_center_raw = row.get("id_center", "").strip()
+
+                # Convertir ids a enters
+                try:
+                    id_patient = int(id_patient_raw)
+                    id_doctor = int(id_doctor_raw)
+                    id_center = int(id_center_raw)
+                except ValueError:
+                    print(
+                        f"Error: ids no vàlids (id_patient: {id_patient_raw}, id_doctor: {id_doctor_raw}, id_center: {id_center_raw})"
+                    )
+                    errors += 1
+                    continue
+
+                total += 1
+                print(
+                    f"[{total}] Es crea la cita: pacient {id_patient}, doctor {id_doctor}, centre {id_center}, data {date}"
+                )
+
+                if (
+                    not date
+                    or not reason
+                    or not id_patient
+                    or not id_doctor
+                    or not id_center
+                ):
+                    print("Error: manca de dades obligatòries")
+                    errors += 1
+                    print("S'atura la càrrega de cites en trobar el primer error.")
+                    return False
+
+                status_create = create_appointment(
+                    token, date, reason, id_patient, id_doctor, id_center
+                )
+
+                if status_create == "created":
+                    created += 1
+                    time.sleep(0.05)
+                elif status_create == "exists":
+                    skipped += 1
+                else:
+                    errors += 1
+                    print("S'atura la càrrega de cites en trobar el primer error.")
+                    return False
+
+            print("\n" + "-" * 50)
+            print(" RESUM DE CITES")
+            print("-" * 50)
+            print(f" Total: {total}")
+            print(f" Creats: {created}")
+            print(f" Omesos: {skipped}")
+            print(f" Errors: {errors}")
+            print("-" * 50)
+            print("")
+
+            return created > 0 or skipped > 0
+
+    except FileNotFoundError:
+        print(f"Error: No s'ha trobat el fitxer '{csv_path}'")
+        return False
+    except Exception as e:
+        print(f"Error en llegir el fitxer CSV de cites: {e}")
+        return False
+
+
 def main():
     """Funció principal."""
 
@@ -503,6 +621,13 @@ def main():
     csv_centers = path.join(dataset_folder, CSV_CENTERS_FILE_NAME)
     centers_ok = load_centers_from_csv(csv_centers, token)
     if centers_ok == False:
+        print("La càrrega de dades ha finalitzat amb errors o omissions.")
+        sys.exit(1)
+
+    # Carrega cites
+    csv_appointments = path.join(dataset_folder, CSV_APPOINTMENTS_FILE_NAME)
+    appointments_ok = load_appointments_from_csv(csv_appointments, token)
+    if appointments_ok == False:
         print("La càrrega de dades ha finalitzat amb errors o omissions.")
         sys.exit(1)
 

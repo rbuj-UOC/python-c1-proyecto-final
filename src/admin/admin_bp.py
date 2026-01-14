@@ -410,7 +410,7 @@ def get_patients():
 
 
 @admin_bp.route("/pacients/<int:id_patient>", methods=["GET"])
-@require_auth_role("admin", "secretaria")
+@require_auth_role("admin", "pacient")
 def get_patient(id_patient):
     """
     Endpoint per obtenir un pacient amb l'ID
@@ -745,7 +745,7 @@ def get_doctors():
 
 
 @admin_bp.route("/doctors/<int:id_doctor>", methods=["GET"])
-@require_auth_role("admin", "secretaria")
+@require_auth_role("admin", "pacient")
 def get_doctor(id_doctor):
     """
     Endpoint per obtenir un doctor amb l'ID
@@ -1043,7 +1043,7 @@ def get_centers():
 
 
 @admin_bp.route("/centres/<int:id_center>", methods=["GET"])
-@require_auth_role("admin", "secretaria")
+@require_auth_role("admin", "pacient")
 def get_center(id_center):
     """
     Endpoint per obtenir un centre per ID
