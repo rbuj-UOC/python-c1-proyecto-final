@@ -3,7 +3,16 @@
     "cSpell.words": [
         "dotenv"
     ],
+    "editor.codeActionsOnSave": {
+        "source.fixAll.markdownlint": "always",
+        "source.fixAll.pylance": "explicit"
+    },
     "editor.formatOnSave": true,
+    "editor.rulers": [
+        80,
+        100
+    ],
+    "files.trimTrailingWhitespace": true,
     "[json]": {
         "editor.formatOnSave": true
     },
@@ -24,17 +33,5 @@
             "source.fixAll.pylance": "explicit"
         }
     },
-    "[shellscript]": {
-        "editor.formatOnSave": true,
-    },
-    "editor.codeActionsOnSave": {
-        "source.fixAll.markdownlint": "always",
-        "source.fixAll.shellcheck": "explicit",
-        "source.fixAll.pylance": "explicit"
-    },
     "python.analysis.typeCheckingMode": "basic",
-    "editor.rulers": [
-        80
-    ],
-    "files.trimTrailingWhitespace": true,
 }
